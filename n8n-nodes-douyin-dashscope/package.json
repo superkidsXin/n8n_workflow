@@ -1,0 +1,47 @@
+{
+  "name": "n8n-nodes-douyin-dashscope",
+  "version": "0.1.0",
+  "description": "n8n community nodes for Douyin parsing and DashScope ASR",
+  "license": "MIT",
+  "homepage": "https://example.com",
+  "author": "",
+  "keywords": [
+    "n8n",
+    "n8n-community-node-package",
+    "douyin",
+    "dashscope",
+    "asr"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json -w",
+    "prepare": "npm run build"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "n8n-core": ">=1.0.0",
+    "n8n-workflow": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "n8n-core": "^1.0.0",
+    "n8n-workflow": "^1.0.0",
+    "typescript": "^5.5.4"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/DouyinParse/DouyinParse.node.js",
+      "dist/nodes/DashScopeAsr/DashScopeAsr.node.js",
+      "dist/nodes/FfmpegExtractAudio/FfmpegExtractAudio.node.js"
+    ],
+    "credentials": [
+      "dist/credentials/DashScopeApi.credentials.js"
+    ]
+  }
+}

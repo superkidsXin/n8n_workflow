@@ -1,0 +1,439 @@
+{
+  "name": "Douyin Text Extract (DashScope)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "douyin/text",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b7b0e2c4-7b3c-4a78-9bba-437335a12b36",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "shareText",
+              "value": "={{$json.body?.shareText ?? $json.shareText ?? ''}}"
+            },
+            {
+              "name": "ua",
+              "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/121.0.2277.107 Version/17.0 Mobile/15E148 Safari/604.1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c9f09e79-78d1-4a83-9a7c-6a6da3a4297e",
+      "name": "Set Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const shareText = $json.shareText || '';\n\n// Extract first URL\nconst urlMatch = shareText.match(/https?:\\/\\/[^\\s]+/i);\nif (!urlMatch) throw new Error('未找到有效的分享链接');\nconst shareUrl = urlMatch[0];\n\n// Try to get video id from common patterns\nlet videoId = null;\ntry {\n  const u = new URL(shareUrl);\n  videoId = u.searchParams.get('modal_id') || u.searchParams.get('video_id');\n} catch (e) {}\n\nif (!videoId) {\n  const m1 = shareUrl.match(/video\\/(\\d+)/i);\n  if (m1) videoId = m1[1];\n}\n\nif (!videoId) throw new Error('无法从链接中提取 video_id/modal_id，请换“分享链接”或把整段分享文案贴进来');\n\nconst iesUrl = `https://www.iesdouyin.com/share/video/${videoId}`;\n\nreturn [{\n  shareUrl,\n  videoId,\n  iesUrl,\n  ua: $json.ua,\n}];"
+      },
+      "id": "6c8d15c6-75bb-4a59-88cc-1c0a9ad285ab",
+      "name": "Parse Share Link",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$json.iesUrl}}",
+        "options": {
+          "timeout": 60000,
+          "followRedirect": true
+        },
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "User-Agent",
+              "value": "={{$json.ua}}"
+            }
+          ]
+        }
+      },
+      "id": "0ccff2e2-0c3d-4f1d-aeb1-5b362ac1a7c2",
+      "name": "Fetch IES HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const html = $json.body || $json || '';\nconst text = typeof html === 'string' ? html : JSON.stringify(html);\n\nconst m = text.match(/window\\._ROUTER_DATA\\s*=\\s*(.*?)<\\/script>/s);\nif (!m || !m[1]) throw new Error('从HTML中解析视频信息失败');\n\nlet jsonData;\ntry {\n  jsonData = JSON.parse(m[1].trim());\n} catch (e) {\n  throw new Error('ROUTER_DATA JSON 解析失败');\n}\n\nconst VIDEO_ID_PAGE_KEY = 'video_(id)/page';\nconst NOTE_ID_PAGE_KEY = 'note_(id)/page';\n\nlet originalVideoInfo;\nif (jsonData?.loaderData?.[VIDEO_ID_PAGE_KEY]) {\n  originalVideoInfo = jsonData.loaderData[VIDEO_ID_PAGE_KEY].videoInfoRes;\n} else if (jsonData?.loaderData?.[NOTE_ID_PAGE_KEY]) {\n  originalVideoInfo = jsonData.loaderData[NOTE_ID_PAGE_KEY].videoInfoRes;\n} else {\n  throw new Error('无法从JSON中解析视频或图集信息');\n}\n\nconst data = originalVideoInfo?.item_list?.[0];\nif (!data) throw new Error('item_list 为空');\n\nlet downloadUrl = data?.video?.play_addr?.url_list?.[0];\nif (!downloadUrl) throw new Error('无法获取 play_addr.url_list[0]');\n\ndownloadUrl = downloadUrl.replace('playwm', 'play');\n\nlet title = (data?.desc || '').trim();\nif (!title) title = `douyin_${$node['Parse Share Link'].json.videoId}`;\n// replace illegal filename chars\ntitle = title.replace(/[\\\\/:*?\"<>|]/g, '_');\n\nreturn [{\n  videoId: $node['Parse Share Link'].json.videoId,\n  title,\n  downloadUrl,\n}];"
+      },
+      "id": "0c3bf32f-9536-4aa0-9f8a-f6e9e5dcf166",
+      "name": "Extract Download URL",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "tempDir",
+              "value": "={{$env.N8N_DOUYIN_TMP_DIR ?? 'D:\\\\work\\\\n8n_tmp\\\\douyin'}}"
+            },
+            {
+              "name": "ossBucket",
+              "value": "={{$env.OSS_BUCKET ?? ''}}"
+            },
+            {
+              "name": "ossEndpoint",
+              "value": "={{$env.OSS_ENDPOINT ?? ''}}"
+            },
+            {
+              "name": "ossPublicBaseUrl",
+              "value": "={{$env.OSS_PUBLIC_BASEURL ?? ''}}"
+            },
+            {
+              "name": "ossPrefix",
+              "value": "={{$env.OSS_PREFIX ?? 'douyin/'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5df5a9bb-2b26-4f3a-99a1-1a0e3f4fbcb8",
+      "name": "Set Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const videoId = $node['Extract Download URL'].json.videoId;\nconst title = $node['Extract Download URL'].json.title;\nconst downloadUrl = $node['Extract Download URL'].json.downloadUrl;\n\nconst tempDir = $json.tempDir;\nif (!tempDir) throw new Error('tempDir 为空');\n\nconst videoPath = `${tempDir}\\\\${videoId}.mp4`;\nconst audioPath = `${tempDir}\\\\${videoId}.mp3`;\n\nconst ossPrefix = ($json.ossPrefix || 'douyin/').replace(/^\\/+/, '').replace(/\\/*$/, '/');\nconst ossVideoKey = `${ossPrefix}videos/${videoId}.mp4`;\nconst ossAudioKey = `${ossPrefix}audios/${videoId}.mp3`;\n\nconst ossPublicBaseUrl = ($json.ossPublicBaseUrl || '').replace(/\\/*$/, '');\nconst ossVideoUrl = ossPublicBaseUrl ? `${ossPublicBaseUrl}/${ossVideoKey}` : '';\nconst ossAudioUrl = ossPublicBaseUrl ? `${ossPublicBaseUrl}/${ossAudioKey}` : '';\n\nreturn [{\n  videoId,\n  title,\n  downloadUrl,\n  tempDir,\n  videoPath,\n  audioPath,\n  ossVideoKey,\n  ossAudioKey,\n  ossVideoUrl,\n  ossAudioUrl,\n  ossBucket: $json.ossBucket,\n  ossEndpoint: $json.ossEndpoint,\n  ossPublicBaseUrl: $json.ossPublicBaseUrl,\n}];"
+      },
+      "id": "3f28011b-1d2e-4e45-9b4b-3af8d3c5d6b0",
+      "name": "Prepare Paths",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$json.downloadUrl}}",
+        "options": {
+          "timeout": 600000,
+          "response": {
+            "responseFormat": "file"
+          }
+        }
+      },
+      "id": "f8b4ce2b-5b21-4b5a-8a74-0a1d79d8f58a",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1710,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{$node['Prepare Paths'].json.videoPath}}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "f0de42b1-7a29-4c68-8a1a-8bbf84cc7df3",
+      "name": "Save Video File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1960,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cmd",
+        "parameters": "/c ffmpeg -y -i \"{{$node['Prepare Paths'].json.videoPath}}\" -vn -acodec libmp3lame -q:a 2 \"{{$node['Prepare Paths'].json.audioPath}}\""
+      },
+      "id": "70c6d0b5-7a46-4c4f-9f28-0c96d52d07b0",
+      "name": "FFmpeg Extract Audio",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2210,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cmd",
+        "parameters": "/c ossutil cp -f \"{{$node['Prepare Paths'].json.videoPath}}\" \"oss://{{$node['Prepare Paths'].json.ossBucket}}/{{$node['Prepare Paths'].json.ossVideoKey}}\" -e {{$node['Prepare Paths'].json.ossEndpoint}}"
+      },
+      "id": "dfd8b004-1da2-4b7f-8443-0863df4a5b15",
+      "name": "Upload Video to OSS (ossutil)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2710,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cmd",
+        "parameters": "/c ossutil cp -f \"{{$node['Prepare Paths'].json.audioPath}}\" \"oss://{{$node['Prepare Paths'].json.ossBucket}}/{{$node['Prepare Paths'].json.ossAudioKey}}\" -e {{$node['Prepare Paths'].json.ossEndpoint}}"
+      },
+      "id": "07bfe0b3-0b4e-4d67-9f27-4b1c3b2b2f3c",
+      "name": "Upload Audio to OSS (ossutil)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2710,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python",
+        "parameters": "-c \"import os, json, dashscope; from http import HTTPStatus; from urllib import request;\napi_key=os.getenv('DASHSCOPE_API_KEY');\nif not api_key: raise SystemExit('Missing env DASHSCOPE_API_KEY');\ndashscope.api_key=api_key;\nvideo_url=os.environ.get('N8N_VIDEO_URL');\nmodel=os.environ.get('DASHSCOPE_ASR_MODEL','paraformer-v2');\nresp=dashscope.audio.asr.Transcription.async_call(model=model,file_urls=[video_url],language_hints=['zh','en']);\nwait=dashscope.audio.asr.Transcription.wait(task=resp.output.task_id);\nif wait.status_code!=HTTPStatus.OK: raise SystemExit(wait.output.message);\nout_text='';\nfor r in wait.output.get('results',[]):\n  url=r.get('transcription_url');\n  if not url: continue;\n  result=json.loads(request.urlopen(url).read().decode('utf8'));\n  ts=result.get('transcripts') or [];\n  if ts: out_text=ts[0].get('text','');\nprint(json.dumps({'text': out_text}, ensure_ascii=False))\"",
+        "options": {
+          "environmentVariables": {
+            "values": [
+              {
+                "name": "N8N_VIDEO_URL",
+                "value": "={{$node['Prepare Paths'].json.ossAudioUrl || $node['Prepare Paths'].json.downloadUrl}}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f3c0f7c3-5a1d-4a4e-b15f-6ef0e9f5b2d4",
+      "name": "DashScope ASR (Python)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse stdout JSON from Execute Command\nconst stdout = $json.stdout || '';\nlet asr;\ntry {\n  asr = JSON.parse(stdout.trim() || '{}');\n} catch (e) {\n  asr = { text: stdout };\n}\n\nconst paths = $node['Prepare Paths'].json;\n\nreturn [{\n  videoId: $node['Extract Download URL'].json.videoId,\n  title: $node['Extract Download URL'].json.title,\n  downloadUrl: $node['Extract Download URL'].json.downloadUrl,\n  ossVideoKey: paths.ossVideoKey,\n  ossAudioKey: paths.ossAudioKey,\n  ossVideoUrl: paths.ossVideoUrl,\n  ossAudioUrl: paths.ossAudioUrl,\n  text: asr.text || ''\n}];"
+      },
+      "id": "a55a3a9a-5ad3-4d03-9c4e-8f8f5e0bda79",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1710,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "f0e5d1b2-6b3e-4f4c-a5a9-2fbdd57c2f52",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1960,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input": {
+      "main": [
+        [
+          {
+            "node": "Parse Share Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Share Link": {
+      "main": [
+        [
+          {
+            "node": "Fetch IES HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch IES HTML": {
+      "main": [
+        [
+          {
+            "node": "Extract Download URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Download URL": {
+      "main": [
+        [
+          {
+            "node": "Set Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Config": {
+      "main": [
+        [
+          {
+            "node": "Prepare Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Paths": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Save Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Video File": {
+      "main": [
+        [
+          {
+            "node": "FFmpeg Extract Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FFmpeg Extract Audio": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to OSS (ossutil)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to OSS (ossutil)": {
+      "main": [
+        [
+          {
+            "node": "Upload Audio to OSS (ossutil)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Audio to OSS (ossutil)": {
+      "main": [
+        [
+          {
+            "node": "DashScope ASR (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DashScope ASR (Python)": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
