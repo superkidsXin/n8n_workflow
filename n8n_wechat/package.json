@@ -38,7 +38,8 @@
     "nodes": [
       "dist/nodes/WechatOfficialAccountNode/WechatOfficialAccountNode.node.js",
       "dist/nodes/WechatOfficialAccountTrigger/WechatOfficialAccountTrigger.node.js",
-      "dist/nodes/WechatOfficialAccountResponseNode/WechatOfficialAccountResponseNode.node.js"
+      "dist/nodes/WechatOfficialAccountResponseNode/WechatOfficialAccountResponseNode.node.js",
+      "dist/nodes/WechatMarkdownToHtmlNode/WechatMarkdownToHtmlNode.node.js"
     ]
   },
   "devDependencies": {
@@ -55,9 +56,15 @@
     "typescript": "^5.5.3"
   },
   "peerDependencies": {
-    "n8n-workflow": "^1.120.6"
+    "n8n-workflow": "^1.120.0"
   },
   "dependencies": {
+    "front-matter": "^4.0.2",
+    "highlight.js": "^11.11.1",
+    "isomorphic-dompurify": "^2.34.0",
+    "jsdom": "^26.0.0",
+    "marked": "^15.0.12",
+    "reading-time": "^1.5.0",
     "xml-js": "^1.6.11"
   }
 }
