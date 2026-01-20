@@ -41,7 +41,9 @@
       "dist/credentials/FeishuOauth2Api.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/FeishuNode/FeishuNode.node.js"
+      "dist/nodes/FeishuNode/FeishuNode.node.js",
+      "dist/nodes/WikiSpaceDocuments/WikiSpaceDocuments.node.js",
+      "dist/nodes/DocxToMarkdown/DocxToMarkdown.node.js"
     ]
   },
   "devDependencies": {
