@@ -1,9 +1,9 @@
 
 n8n_wechat/node_modules
 n8n_capcut/node_modules
+n8n-nodes-aliyunoss/node_modules
 n8n_capcut/dist
 n8n_wechat/dist
+n8n-nodes-aliyunoss/dist
 feishu-pages/node_modules
 *.tsbuildinfo
-n8n-nodes-aliyunoss/node_modules
-n8n-nodes-aliyunoss/dist
