@@ -1,0 +1,49 @@
+{
+  "name": "n8n-nodes-aliyunoss",
+  "version": "0.1.0",
+  "description": "n8n community node for Aliyun OSS upload",
+  "keywords": [
+    "n8n-community-node-package",
+    "aliyun",
+    "oss"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "pc"
+  },
+  "engines": {
+    "node": ">=18.10",
+    "pnpm": ">=9.1"
+  },
+  "packageManager": "pnpm@9.1.4",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node scripts/clean-dist.js && tsc -p tsconfig.json --incremental false && node scripts/copy-icons.js",
+    "dev": "tsc --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/AliyunOssApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/AliyunOss/AliyunOss.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/ali-oss": "^6.23.1",
+    "@types/node": "^22.13.1",
+    "typescript": "^5.5.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "^1.120.0"
+  },
+  "dependencies": {
+    "ali-oss": "^6.23.0",
+    "glob": "^10.4.5"
+  }
+}

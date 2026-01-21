@@ -28,8 +28,7 @@
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "pnpm build && pnpm lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "lintfix": "eslint nodes credentials package.json --fix"
   },
   "files": [
     "dist"
@@ -42,11 +41,12 @@
     ],
     "nodes": [
       "dist/nodes/FeishuNode/FeishuNode.node.js",
-      "dist/nodes/WikiSpaceDocuments/WikiSpaceDocuments.node.js",
-      "dist/nodes/DocxToMarkdown/DocxToMarkdown.node.js"
+      "dist/nodes/WikiSpaceDocuments/WikiSpaceDocuments.node.js"
     ]
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^22.13.1",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.56.0",
@@ -63,6 +63,10 @@
     "n8n-workflow": "^1.115.0"
   },
   "dependencies": {
+    "js-yaml": "^4.1.1",
+    "jsdom": "^22.1.0",
+    "marked": "^17.0.1",
+    "marked-xhtml": "^1.0.14",
     "xml-js": "^1.6.11"
   }
 }

@@ -78,7 +78,7 @@ export class FeishuNode implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 
-		let responseData: IDataObject = {};
+		let responseData: any = {};
 		let returnData = [];
 
 		const resource = this.getNodeParameter('resource', 0);
@@ -90,13 +90,18 @@ export class FeishuNode implements INodeType {
 			throw new NodeOperationError(this.getNode(), '未实现方法: ' + resource + '.' + operation);
 		}
 
+		const isExecutionData = (v: any) =>
+			v && typeof v === 'object' && (Object.prototype.hasOwnProperty.call(v, 'binary') || Object.prototype.hasOwnProperty.call(v, 'json'));
+
 		// 聚合
 		if (operation.includes("aggregate")){
 			responseData = await callFunc.call(this, 0);
-			const executionData = this.helpers.constructExecutionMetaData(
-				this.helpers.returnJsonArray(responseData as IDataObject),
-				{ itemData: { item: 0 } },
-			);
+			const executionData = isExecutionData(responseData)
+				? this.helpers.constructExecutionMetaData([responseData], { itemData: { item: 0 } })
+				: this.helpers.constructExecutionMetaData(
+					this.helpers.returnJsonArray(responseData as IDataObject),
+					{ itemData: { item: 0 } },
+				);
 			returnData.push(...executionData);
 
 			return [returnData];
@@ -147,10 +152,12 @@ export class FeishuNode implements INodeType {
 					});
 				}
 			}
-			const executionData = this.helpers.constructExecutionMetaData(
-				this.helpers.returnJsonArray(responseData as IDataObject),
-				{ itemData: { item: itemIndex } },
-			);
+			const executionData = isExecutionData(responseData)
+				? this.helpers.constructExecutionMetaData([responseData], { itemData: { item: itemIndex } })
+				: this.helpers.constructExecutionMetaData(
+					this.helpers.returnJsonArray(responseData as IDataObject),
+					{ itemData: { item: itemIndex } },
+				);
 			returnData.push(...executionData);
 		}
 
