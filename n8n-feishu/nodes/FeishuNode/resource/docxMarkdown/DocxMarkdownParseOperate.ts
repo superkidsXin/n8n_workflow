@@ -2,9 +2,9 @@ import {IDataObject, IExecuteFunctions, NodeOperationError} from 'n8n-workflow';
 
 import {ResourceOperations} from '../../../help/type/IResource';
 import {docxBlocksToMarkdown} from '../../../help/utils/DocxMarkdownRenderer';
-import type {FileToken} from '../../../help/utils/feishu_docx/types';
-
-import {extractFileNameFromMarkdown, getAllBlocks, sanitizeFileName} from './utils/docx';
+import type {CommonBlock} from '../../../help/utils/feishu_docx/types';
+import { getFileNameFromBlock } from './utils/docx';
+import { getAllBlocks} from './utils/docx';
 
 export default {
   name: '解析 Docx 为 Markdown',
@@ -36,13 +36,10 @@ export default {
 
         try {
           const files =
-              Object.values(fileTokens).map((fileToken: FileToken) => {
-                const guessedName =
-                    extractFileNameFromMarkdown(markdown, fileToken.token);
-                const fileName = sanitizeFileName(
-                    guessedName || fileToken.token, fileToken.type);
+              Object.values(fileTokens).map((fileToken: CommonBlock) => {
+                const fileName = getFileNameFromBlock(fileToken);
                 const ossObjectKey = `feishu-docx/${documentId}/${fileName}`;
-                return {token: fileToken.token, fileName, ossObjectKey};
+                return {token: fileToken.block.token, fileName, ossObjectKey};
               });
 
           return {

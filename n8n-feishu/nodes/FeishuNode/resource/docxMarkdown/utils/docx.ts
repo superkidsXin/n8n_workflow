@@ -1,25 +1,8 @@
 import type {IExecuteFunctions} from 'n8n-workflow';
 
-import type {Block} from '../../../../help/utils/feishu_docx/types';
+import type {Block, CommonBlock, FileBlock} from '../../../../help/utils/feishu_docx/types';
 import RequestUtils from '../../../../help/utils/RequestUtils';
 
-function escapeRegExp(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-export function sanitizeFileName(name: string, fileType: string) {
-  const cleaned = name.replace(/[\\/:*?"<>|]/g, '_').trim();
-  if (cleaned.length > 0) {
-    return cleaned + '.' + fileType;
-  }
-  throw new Error('File name is empty');
-}
-
-export function extractFileNameFromMarkdown(markdown: string, token: string) {
-  const safe = escapeRegExp(token);
-  const m = markdown.match(new RegExp(`\\[([^\\]]+)]\\(${safe}\\)`));
-  return m?.[1]?.trim() || '';
-}
 
 export async function downloadFeishuMedia(
     this: IExecuteFunctions, fileToken: string): Promise<Buffer> {
@@ -33,6 +16,17 @@ export async function downloadFeishuMedia(
   if (Buffer.isBuffer(res)) return res;
   if (typeof res === 'string') return Buffer.from(res, 'binary');
   return Buffer.from(res || '');
+}
+
+export function getFileNameFromBlock(block: CommonBlock): string {
+  if (block.type === 'image') {
+    return `${block.block.token}.png`;
+  }
+  if (block.type === 'file') {
+    const fileblock=block.block as FileBlock;
+    return `${block.block.token}_${fileblock.name}`;
+  }
+  return '';
 }
 
 export async function getAllBlocks(

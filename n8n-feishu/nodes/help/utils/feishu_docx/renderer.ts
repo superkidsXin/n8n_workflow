@@ -1,4 +1,4 @@
-import {Block, DocMetaInfo, FileToken} from './types';
+import {Block, DocMetaInfo,  CommonBlock} from './types';
 
 export class Renderer {
   documentId: string;
@@ -9,7 +9,8 @@ export class Renderer {
   head_img?: string;
   blockMap: Record<string, Block> = {};
   parentId?: string;
-  fileTokens: Record<string, FileToken> = {};
+  fileTokens: Record<string, CommonBlock> = {};
+
   nextBlock?: Block|null;
   /**
    * Current Block
@@ -61,13 +62,11 @@ export class Renderer {
    * @param type
    * @param token
    */
-  addFileToken(type: 'file'|'image', token: string) {
-    const file_token = {
-      token,
-      type,
-    };
-    this.fileTokens[token] = file_token;
-    return file_token;
+  addFileToken(commonBlock: CommonBlock) {
+    // console.log("addFileToken",commonBlock);
+    const token=commonBlock.block.token;
+    this.fileTokens[token] = commonBlock;
+    return ;
   }
 }
 

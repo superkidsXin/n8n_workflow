@@ -303,11 +303,21 @@ export interface TextBlock {
   elements: TextElement[];
 }
 
+export interface CommonBlock {
+  type: 'image'|'file';
+  block: ImageBlock|FileBlock;
+}
+
 export interface ImageBlock {
   width: number;
   height: number;
   token: string;
   align: StyleAlign;
+}
+
+export interface FileBlock{
+  name: string;
+  token: string;
 }
 
 export interface TableBlock {
@@ -409,6 +419,7 @@ export interface CalloutBlock {
   emoji_id: String;
 }
 
+
 export interface Block {
   block_id: string;
   parent_id: string;
@@ -471,11 +482,6 @@ export function getAlignStyle(align: StyleAlign) {
   }
 }
 
-export interface FileToken {
-  token: string;
-  type: 'file'|'image';
-  extension: string;
-}
 
 export interface DocInfo {
   document_id: string;
