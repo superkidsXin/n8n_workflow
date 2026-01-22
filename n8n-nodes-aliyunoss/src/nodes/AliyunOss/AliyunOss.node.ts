@@ -1,7 +1,7 @@
-import type { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type {IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription} from 'n8n-workflow';
 
 import ResourceFactory from '../help/builder/ResourceFactory';
-import { executeResourceOperation } from '../help/executeResourceOperation';
+import {executeResourceOperation} from '../help/executeResourceOperation';
 
 const resourceBuilder = ResourceFactory.build(__dirname);
 export class AliyunOss implements INodeType {

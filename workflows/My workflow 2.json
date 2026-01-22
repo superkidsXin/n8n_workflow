@@ -1,0 +1,402 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -112
+      ],
+      "id": "42d92cf2-e831-41de-b5bc-d0b9c2943b3b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "docxMarkdown",
+        "operation": "docxMarkdown:parse",
+        "document_id": "ZkGFwvSXni4oh0k9r2KcYS0OnUw"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -128
+      ],
+      "id": "34d4dfb9-e255-4893-95d0-0a6b74b8376a",
+      "name": "DocxMarkdown:parse docxMarkdown",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "docxMarkdown",
+        "operation": "docxMarkdown:download",
+        "fileToken": "={{ $('Split Out').item.json.token }}",
+        "fileName": "={{ $('Split Out').item.json.fileName }}"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -224
+      ],
+      "id": "f4ea988b-6e29-423d-81c5-3ae2b88b1bc4",
+      "name": "DocxMarkdown:download docxMarkdown",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "object",
+        "operation": "exists",
+        "objectKey": "={{ $json.ossObjectKey }}"
+      },
+      "type": "n8n-nodes-aliyunoss.aliyunOss",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        -144
+      ],
+      "id": "846964d6-14b7-4b91-ab4a-40212633ffc1",
+      "name": "Exists object",
+      "credentials": {
+        "aliyunOssApi": {
+          "id": "FtFy36EhYqllB4Oe",
+          "name": "bytefuse_oss"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -128
+      ],
+      "id": "f3a57803-bbe4-4389-8457-42b5e3049935",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f6651a99-3f8a-4431-a43e-34e82cd9231d",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        -144
+      ],
+      "id": "7d0b59fe-ee80-437c-8ed3-251fdb11408b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "object",
+        "operation": "upload",
+        "objectKey": "={{ $('Split Out').item.json.ossObjectKey }}"
+      },
+      "type": "n8n-nodes-aliyunoss.aliyunOss",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -240
+      ],
+      "id": "236e050f-8ec4-42dd-aca9-90146b71f198",
+      "name": "Upload object",
+      "credentials": {
+        "aliyunOssApi": {
+          "id": "FtFy36EhYqllB4Oe",
+          "name": "bytefuse_oss"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n\n\nconst splitout=$('Split Out').all();\nconst token2key=new Map();\nfor(var it in splitout){\n  const item=splitout[it];\n  const token=item.json.token;\n  const key=item.json.ossObjectKey;\n  token2key.set(key,token);\n}\nconst urlItems=$input.all();\nconst outputs=[]\nfor(const it in urlItems){\n  const item=urlItems[it]\n  const key=item.json.key;\n  const token=token2key.get(key);\n  const url=item.json.url;\n  outputs.push({token,url})\n}\nreturn [\n  {\n  json:{  \n    outputs,\n    count:outputs.length,\n    mapjson:JSON.stringify(outputs)\n  }\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "84059770-f327-48c2-a4fe-690f89a5842e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "docxMarkdown",
+        "operation": "markdown:replaceUrls",
+        "markdown": "={{ $('DocxMarkdown:parse docxMarkdown').first().json.markdown }}",
+        "mappingsJson": "={{ $json.mapjson }}"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -64
+      ],
+      "id": "dc7d0f4a-d726-43b7-b29c-6bfa36e36794",
+      "name": "Markdown:replaceUrls docxMarkdown",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        -64
+      ],
+      "id": "1c4fb5d6-22b8-4dcb-8e0d-49cbeca2e525",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "resource": "bitable",
+        "operation": "bitable:parseUrl",
+        "url": "https://my.feishu.cn/wiki/IfBBw3UiIiqlAakjV21cwS1dnqx?fromScene=spaceOverview&table=tblqJDxS4Fpg5z01&view=vewsEFhP3J"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -112
+      ],
+      "id": "d9c3fbba-c046-44f4-b3e5-31c2e62fb25b",
+      "name": "Bitable:parseUrl bitable",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "bitable",
+        "operation": "bitable:table:record:add",
+        "app_toke": "= {{ $('Bitable:parseUrl bitable').first().json.app_token }}",
+        "table_id": "={{ $('Bitable:parseUrl bitable').first()\n.json.table_id }}",
+        "body": "={\"fields\":{\n  \"id\":\"{{ $('DocxMarkdown:parse docxMarkdown').first().json.document_id }}\",\n  \"title\":\n}} "
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -64
+      ],
+      "id": "94ddf5ec-7f85-4b42-b60f-3ff7049bc3b6",
+      "name": "Bitable:table:record:add bitable",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "doc",
+        "operation": "doc:getInfo",
+        "document_id": "ZkGFwvSXni4oh0k9r2KcYS0OnUw"
+      },
+      "type": "n8n-nodes-feishu-lite.feishuNode",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        32
+      ],
+      "id": "92029928-2654-43c9-a7bb-f1155108e447",
+      "name": "Doc:getInfo doc",
+      "credentials": {
+        "feishuCredentialsApi": {
+          "id": "UCtfJHgRvmfQBdPQ",
+          "name": "myfeishu"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Bitable:parseUrl bitable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DocxMarkdown:parse docxMarkdown": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exists object": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Exists object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "DocxMarkdown:download docxMarkdown",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DocxMarkdown:download docxMarkdown": {
+      "main": [
+        [
+          {
+            "node": "Upload object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload object": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Markdown:replaceUrls docxMarkdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown:replaceUrls docxMarkdown": {
+      "main": [
+        [
+          {
+            "node": "Bitable:table:record:add bitable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bitable:parseUrl bitable": {
+      "main": [
+        [
+          {
+            "node": "Doc:getInfo doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "365372d8-5078-422e-a490-f9bf04e6cb1f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "10632c0121cbee6ec79e0c57073a02f9d1ea757f302d57f377c92926266100d5"
+  },
+  "id": "lILHPJ6gW98EX8HeUTBzs",
+  "tags": []
+}

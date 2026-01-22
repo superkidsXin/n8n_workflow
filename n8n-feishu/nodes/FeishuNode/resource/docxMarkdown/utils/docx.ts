@@ -23,10 +23,20 @@ export function getFileNameFromBlock(block: CommonBlock): string {
     return `${block.block.token}.png`;
   }
   if (block.type === 'file') {
-    const fileblock=block.block as FileBlock;
+    const fileblock = block.block as FileBlock;
     return `${block.block.token}_${fileblock.name}`;
   }
   return '';
+}
+
+
+export async function GetDocumentInfo(
+    this: IExecuteFunctions, documentId: string): Promise<IDataObject> {
+  const res = (await RequestUtils.request.call(this, {
+                method: 'GET',
+                url: `/open-apis/docx/v1/documents/${documentId}`,
+              })) as any;
+  return res?.data || {};
 }
 
 export async function getAllBlocks(
